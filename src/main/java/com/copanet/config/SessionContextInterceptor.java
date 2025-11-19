@@ -40,6 +40,8 @@ public class SessionContextInterceptor implements HandlerInterceptor {
             try {
                 Integer usuarioId = jwtUtil.obtenerUsuarioId(token);
 
+                request.setAttribute("usuarioId", usuarioId);
+                
                 if (usuarioId != null) {
                     try (Connection con = dataSource.getConnection();
                         PreparedStatement stmt = con.prepareStatement(

@@ -2,6 +2,7 @@ package com.copanet.api.config;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -10,9 +11,14 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private static final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private final Key key;
 
-    // Crear un token con UsuarioId
+    // Constructor que carga la llave desde application.properties
+    public JwtUtil(@Value("${jwt.secret}") String secret) {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+    }
+
+    // Crear token con usuarioId + email + rolId
     public String generarToken(Integer usuarioId, String email, Integer rolId) {
         return Jwts.builder()
                 .setSubject(email)
@@ -24,8 +30,7 @@ public class JwtUtil {
                 .compact();
     }
 
-
-    // Extraer UsuarioId del token
+    // Extraer usuarioId
     public Integer obtenerUsuarioId(String token) {
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -34,5 +39,16 @@ public class JwtUtil {
                 .getBody();
 
         return claims.get("usuarioId", Integer.class);
+    }
+
+    // Extraer rolId (opcional)
+    public Integer obtenerRolId(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        return claims.get("rolId", Integer.class);
     }
 }
