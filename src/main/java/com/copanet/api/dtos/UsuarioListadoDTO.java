@@ -1,6 +1,7 @@
 package com.copanet.api.dtos;
 
 public class UsuarioListadoDTO {
+
     private String identificacion;
     private String nombre;
     private String rol;
@@ -18,3 +19,4 @@ public class UsuarioListadoDTO {
     public String getRol() { return rol; }
     public String getEstado() { return estado; }
 }
+

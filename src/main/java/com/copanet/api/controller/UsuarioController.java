@@ -1,11 +1,14 @@
 package com.copanet.api.controller;
 
 import com.copanet.api.dtos.CrearUsuarioDTO;
+import com.copanet.api.dtos.UsuarioListadoDTO;
 import com.copanet.api.service.UsuarioService;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -28,8 +31,13 @@ public class UsuarioController {
     }
 
     @GetMapping("/listar")
-    public List<UsuarioListadoDTO> listarUsuarios() {
-        return usuarioService.listarUsuarios();
+    public ResponseEntity<List<UsuarioListadoDTO>> listarUsuarios() {
+        try {
+            List<UsuarioListadoDTO> usuarios = usuarioService.listarUsuarios();
+            return ResponseEntity.ok(usuarios);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
 }
