@@ -1,4 +1,7 @@
 package com.copanet.api.seguridad;
+import com.copanet.api.config.JwtUtil;
+
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.copanet.api.seguridad.dto.LoginRequest;
 import com.copanet.api.seguridad.dto.LoginResponse;
@@ -17,48 +20,55 @@ public class AuthService {
 
     private final UsuarioRepository usuarioRepository;
     private final UsuarioRecoveryRepository recoveryRepository;
+    private final JwtUtil jwtUtil;
 
+        @Autowired
     public AuthService(UsuarioRepository usuarioRepository,
-                       UsuarioRecoveryRepository recoveryRepository) {
+                       UsuarioRecoveryRepository recoveryRepository,
+                       JwtUtil jwtUtil) {
+
         this.usuarioRepository = usuarioRepository;
         this.recoveryRepository = recoveryRepository;
+        this.jwtUtil = jwtUtil;
     }
 
     // ====== LOGIN SOLO ADMIN ======
-    public LoginResponse login(LoginRequest request) {
+   public LoginResponse login(LoginRequest request) {
 
         var usuario = usuarioRepository.findByEmailIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuario o contraseña incorrectos"));
 
-        // 1) validar estado
-        if (!"ACTIVO".equalsIgnoreCase(usuario.getEstado())) {
-            throw new RuntimeException("Usuario inactivo o bloqueado");
-        }
-
-        // 2) validar contraseña (comparando texto plano)
-        String passwordEnviado = request.getPassword() != null ? request.getPassword() : "";
-        String passwordGuardado = usuario.getPasswordHash() != null
-                ? new String(usuario.getPasswordHash(), StandardCharsets.UTF_8)
-                : "";
-
-        if (!passwordGuardado.equals(passwordEnviado)) {
+        // ===== VALIDAR CONTRASEÑA =====
+        if (!new String(usuario.getPasswordHash()).equals(request.getPassword())) {
             throw new RuntimeException("Usuario o contraseña incorrectos");
         }
 
-        // 3) validar que sea ADMIN
+        // ===== VALIDAR QUE SEA ADMIN =====
         boolean esAdmin = usuario.getRoles().stream()
-                .anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getNombre()));
+                .anyMatch(r -> r.getId() == 1);  // RolId = 1 = ADMIN
 
         if (!esAdmin) {
-            throw new RuntimeException("No tiene permisos de administrador");
+            throw new RuntimeException("Acceso denegado: solo administradores pueden iniciar sesión.");
         }
 
-        var roles = usuario.getRoles().stream()
-                .map(Rol::getNombre)
-                .collect(Collectors.toList());
+        // ===== GENERAR TOKEN CON ROL =====
+        String token = jwtUtil.generarToken(
+                usuario.getId(),
+                usuario.getEmail(),
+                1   // si llegó aquí, es admin
+        );
 
-        return new LoginResponse(usuario.getId(), usuario.getEmail(), usuario.getNombre(), roles);
+        // ===== RESPUESTA =====
+        return new LoginResponse(
+                usuario.getId(),
+                usuario.getEmail(),
+                usuario.getNombre(),
+                1,         // rolId = 1
+                token
+        );
     }
+
+
 
 
     // ====== INICIAR RECUPERACIÓN (PASO 1) ======

@@ -1,5 +1,7 @@
 package com.copanet.api.seguridad;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import com.copanet.api.seguridad.dto.LoginRequest;
 import com.copanet.api.seguridad.dto.LoginResponse;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +12,7 @@ import com.copanet.api.seguridad.dto.RecoveryResetRequest;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173") // front React
+@CrossOrigin(origins = "http://localhost:5173") 
 public class AuthController {
 
     private final AuthService authService;
@@ -20,14 +22,29 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        try {
-            LoginResponse response = authService.login(request);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException ex) {
-            return ResponseEntity.status(401).body(ex.getMessage());
-        }
+public ResponseEntity<?> login(
+        @RequestBody LoginRequest request,
+        HttpServletRequest http
+) {
+    try {
+        LoginResponse response = authService.login(request);
+
+        System.out.println(">>> LOGIN LLEGÓ AL BACKEND");
+System.out.println("UsuarioId devuelto por login: " + response.getUsuarioId());
+
+
+        // 🔥 Guardar UsuarioId para el interceptor
+        http.setAttribute("UsuarioId", response.getUsuarioId());
+
+        return ResponseEntity.ok(response);
+
+    } catch (RuntimeException ex) {
+        return ResponseEntity.status(401).body(ex.getMessage());
     }
+}
+
+
+
         @PostMapping("/recovery/email")
     public ResponseEntity<?> iniciarRecovery(@RequestBody LoginRequest body) {
         try {
